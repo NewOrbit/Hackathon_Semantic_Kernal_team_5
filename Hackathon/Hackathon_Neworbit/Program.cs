@@ -37,30 +37,68 @@ var chatHistory = new ChatHistory();
 // create embeddings
 var embedder = new EmbeddingsManager(app.Services.GetRequiredService<ITextEmbeddingGenerationService>());
 
+// 1. programming all leaflets
 Console.WriteLine("Programming new embeddings...");
-await embedder.ProgramEmbedding("dog", "Animal that wags a tail");
+await embedder.ProgramEmbedding("paracetamol", "headache, fever, cough");
 await embedder.ProgramEmbedding("cat", "cat");
 await embedder.ProgramEmbedding("house", "house");
 
-while (true)
-{
-    Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.Write("Guess: ");
-    var prompt = Console.ReadLine();
-    var result = await embedder.Search(prompt);
+// 2. AI: What ails you? 
+//    User: I have a headache
 
-    Console.ForegroundColor = ConsoleColor.Green;
-    
-    Console.WriteLine("Result by distance: ");
-    foreach (var item in result)
-    {
-        Console.WriteLine($"{item.Distance} - {item.Id}");
-    }
-}
+// 3. Fetch drugs from embeddingsManager
+
+// 4. Summarise leaflets to what to look out for
+
+// 5. pass summarised leaflets to SystemMessage
+
+
+// while (true)
+// {
+//     Console.ForegroundColor = ConsoleColor.Yellow;
+//     Console.Write("Guess: ");
+//     var prompt = Console.ReadLine();
+//     var result = await embedder.Search(prompt);
+//
+//     Console.ForegroundColor = ConsoleColor.Green;
+//     
+//     Console.WriteLine("Result by distance: ");
+//     foreach (var item in result)
+//     {
+//         Console.WriteLine($"{item.Distance} - {item.Id}");
+//     }
+// }
 
 
 chatHistory.AddSystemMessage(
-    "You are a pharmacist trying to help choose the right medication for a patient. The patient");
+   $"""
+    You are a pharmacist trying to help choose the right medication for a patient. 
+    The recommended drugs are: with leaflets:
+    Make sure that the user can take the drugs, ask them questions to make sure they can take the drugs.
+    
+    Paracetmol leaflet summary:
+    .
+    
+    
+    .
+    .
+    .
+    .
+    
+    
+    
+    Ibuprofen leaflet:
+    ..
+    .
+    .
+    .
+    
+    .
+    .
+    
+    
+    now go help them
+    """);
 
 Console.ForegroundColor = ConsoleColor.Green;
 Console.WriteLine("Chat GP: Hello!. What ails you?");
