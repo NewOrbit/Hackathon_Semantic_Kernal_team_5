@@ -67,6 +67,7 @@ public class EmbeddingsManager
 
         var distances = _db.Select(embedding => new IdWithDistance(
                 embedding.Id,
+                embedding.Text,
                 embedding.Vector.DistanceFrom(searchVector)))
             .OrderBy(x => x.Distance)
             .ToArray();
@@ -85,4 +86,4 @@ public class EmbeddingsManager
 
 record Embedding(string Id, string Text, ReadOnlyMemory<float> Vector);
 
-public record IdWithDistance(string Id, float Distance);
+public record IdWithDistance(string Id, string Leaflet, float Distance);

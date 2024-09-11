@@ -7,6 +7,8 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Embeddings;
 using Microsoft.VisualBasic.FileIO;
 using System.Globalization;
+using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 #pragma warning disable SKEXP0010
 #pragma warning disable SKEXP0001
@@ -51,58 +53,109 @@ using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
     var records = csv.GetRecords<LeafletDO>();
     foreach (var record in records)
     {
-        dict.Add(record.ProductName, record.Leaflet);
+        dict.Add(record.ProductName, record.Dosage);
     }
 }
+
 
 Console.WriteLine("Programming new embeddings...");
 await embedder.ProgramEmbeddingsFromDictionary(dict);
 
-// 3. pass summaries to SystemMessage
 
-chatHistory.AddSystemMessage(
-   $"""
-    You are a pharmacist trying to help choose the right medication for a patient. 
-    The recommended drugs are: with leaflets:
-    Make sure that the user can take the drugs, ask them questions to make sure they can take the drugs.
-    
-    Paracetmol leaflet summary:
-    .
-    
-    
-    .
-    .
-    .
-    .
-    
-    
-    
-    Ibuprofen leaflet:
-    ..
-    .
-    .
-    .
-    
-    .
-    .
-    
-    
-    now go help them
-    """);
+Kernel kernel = new();
+kernel.Plugins.AddFromFunctions("time_plugin",
+[
+    KernelFunctionFactory.CreateFromMethod(
+        method: async (string searchText) =>
+        {
+            Console.WriteLine($"using lookup (plugin) with search text: {searchText}");
+
+            var res = await embedder.Search(searchText);
+            return res.Select(x => x.Id).Take(2);
+        },
+        functionName: "get_matching_leaflets",
+        description: "Gets the leaflets that match the search text based on ailments",
+        returnParameter: new KernelReturnParameterMetadata()
+        {
+            Description =
+                "List of records contianing the ID as product name and a leaflet text, ordered by distance (vector search)",
+        }
+    ),
+]);
+
+
+chatHistory.AddSystemMessage("""
+                             You are an interactive health chatbot helping users find suitable over-the-counter medications based on their symptoms and personal circumstances.
+                              
+                             Start by asking the user to describe their main symptom. Once the user responds, ask clarifying questions one by one to gather more specific details about the symptom.
+                              
+                             Next, ask about any personal factors one by one, such as pregnancy, driving, alcohol consumption, allergies, or other medications. Use the product leaflets to check for contraindications and interactions.
+                              
+                             Finally, recommend appropriate medications based on the user’s responses, providing brief explanations for each recommendation and any necessary warnings.
+                              
+                             Your task is to:
+
+                             1. Begin with an open-ended question about the user’s symptoms.
+
+                             2. Follow up with clarifying questions, asking one at a time.
+
+                             3. Inquire about personal circumstances, asking each question individually.
+
+                             4. Recommend over-the-counter medications based on the user’s symptoms and personal situation.
+
+                             5. Provide explanations for your recommendations and note any warnings.
+
+                             6. Optionally, ask if the user would like additional information, such as availability or pricing of the medications.
+                              
+                             For example:
+
+                             - Ask: "What symptom are you experiencing?"
+
+                             - Wait for the user’s response, then ask: "How long have you had this symptom?"
+
+                             - After that, ask: "Are you taking any other medications?"
+                              
+                             Output should include a list of suitable medications and reasons why they are recommended, but remember to ask questions one at a time and adjust based on the user’s responses.
+                             """);
 
 Console.ForegroundColor = ConsoleColor.Green;
 Console.WriteLine("Chat GP: Hello!. What ails you?");
 
+AzureOpenAIPromptExecutionSettings settings = new()
+{
+    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+};
+
+async Task<ChatMessageContent> Talk(string question)
+{
+    var success = false;
+    while (!success)
+    {
+        try
+        {
+            var response = await chat.GetChatMessageContentsAsync(chatHistory, settings, kernel);
+            success = true;
+            return response.Last();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Retrying...");
+            await Task.Delay(1000);
+        }
+    }
+
+    throw new Exception();
+}
+
 while (true)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.WriteLine("Jay: ");
+    Console.Write("Patient: ");
     var prompt = Console.ReadLine();
     chatHistory.AddUserMessage(prompt!);
 
     Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("AI: ");
-    var response = await chat.GetChatMessageContentsAsync(chatHistory);
-    var lastMessage = response.Last();
+    Console.Write("Chat GP: ");
+    var lastMessage = await Talk(prompt!);
     Console.WriteLine(lastMessage);
 }
