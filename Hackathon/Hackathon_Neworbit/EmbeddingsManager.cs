@@ -73,6 +73,14 @@ public class EmbeddingsManager
 
         return distances;
     }
+
+    public async Task ProgramEmbeddingsFromDictionary(Dictionary<string, string> embeddings)
+    {
+        foreach (var item in embeddings)
+        {
+            await this.ProgramEmbedding(item.Key, item.Value);
+        }
+    }
 }
 
 record Embedding(string Id, string Text, ReadOnlyMemory<float> Vector);

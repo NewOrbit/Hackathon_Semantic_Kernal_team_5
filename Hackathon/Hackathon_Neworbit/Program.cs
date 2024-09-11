@@ -39,14 +39,13 @@ var embedder = new EmbeddingsManager(app.Services.GetRequiredService<ITextEmbedd
 
 // 1. programming all leaflets
 Console.WriteLine("Programming new embeddings...");
-await embedder.ProgramEmbedding("paracetamol", "headache, fever, cough");
-await embedder.ProgramEmbedding("cat", "cat");
-await embedder.ProgramEmbedding("house", "house");
+await embedder.ProgramEmbeddingsFromDictionary(new ActiveIngredientsDict().DictionaryData);
 
 // 2. AI: What ails you? 
 //    User: I have a headache
 
 // 3. Fetch drugs from embeddingsManager
+var csv = File.ReadAllText("");
 
 // 4. Summarise leaflets to what to look out for
 
