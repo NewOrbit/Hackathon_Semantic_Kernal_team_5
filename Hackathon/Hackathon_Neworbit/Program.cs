@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Hackathon_Neworbit;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -35,6 +36,18 @@ var chatHistory = new ChatHistory();
 
 // create embeddings
 var embeddings = app.Services.GetRequiredService<ITextEmbeddingGenerationService>();
+
+// create a vector using embedding
+var dog = await embeddings.GenerateEmbeddingAsync("dog");
+var house = await embeddings.GenerateEmbeddingAsync("house");
+var cat = await embeddings.GenerateEmbeddingAsync("cat");
+
+var fromHouse = dog.DistanceFrom(house);
+var fromDog = dog.DistanceFrom(cat);
+
+Console.WriteLine("Distance from dog:");
+Console.WriteLine($"house: {fromHouse}");
+Console.WriteLine($"cat:   {fromDog}");
 
 chatHistory.AddSystemMessage(
     "You are a pharmacist trying to help choose the right medication for a patient. The patient");
