@@ -1,9 +1,12 @@
-﻿using Hackathon_Neworbit;
+﻿using CsvHelper;
+using Hackathon_Neworbit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Embeddings;
+using Microsoft.VisualBasic.FileIO;
+using System.Globalization;
 
 #pragma warning disable SKEXP0010
 #pragma warning disable SKEXP0001
@@ -38,36 +41,24 @@ var chatHistory = new ChatHistory();
 var embedder = new EmbeddingsManager(app.Services.GetRequiredService<ITextEmbeddingGenerationService>());
 
 // 1. programming all leaflets
+Console.WriteLine("Fetching leaflet data...");
+
+// 2. summarise leaflets and embed
+var dict = new Dictionary<string, string>();
+using (var reader = new StreamReader("meds3.csv"))
+using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+{
+    var records = csv.GetRecords<LeafletDO>();
+    foreach (var record in records)
+    {
+        dict.Add(record.ProductName, record.Leaflet);
+    }
+}
+
 Console.WriteLine("Programming new embeddings...");
-await embedder.ProgramEmbeddingsFromDictionary(new ActiveIngredientsDict().DictionaryData);
+await embedder.ProgramEmbeddingsFromDictionary(dict);
 
-// 2. AI: What ails you? 
-//    User: I have a headache
-
-// 3. Fetch drugs from embeddingsManager
-var csv = File.ReadAllText("");
-
-// 4. Summarise leaflets to what to look out for
-
-// 5. pass summarised leaflets to SystemMessage
-
-
-// while (true)
-// {
-//     Console.ForegroundColor = ConsoleColor.Yellow;
-//     Console.Write("Guess: ");
-//     var prompt = Console.ReadLine();
-//     var result = await embedder.Search(prompt);
-//
-//     Console.ForegroundColor = ConsoleColor.Green;
-//     
-//     Console.WriteLine("Result by distance: ");
-//     foreach (var item in result)
-//     {
-//         Console.WriteLine($"{item.Distance} - {item.Id}");
-//     }
-// }
-
+// 3. pass summaries to SystemMessage
 
 chatHistory.AddSystemMessage(
    $"""
@@ -98,12 +89,6 @@ chatHistory.AddSystemMessage(
     
     now go help them
     """);
-
-Console.ForegroundColor = ConsoleColor.Green;
-Console.WriteLine("Chat GP: Hello!. What ails you?");
-
-chatHistory.AddSystemMessage(
-    "You are a pharmacist trying to help choose the right medication for a patient. The patient");
 
 Console.ForegroundColor = ConsoleColor.Green;
 Console.WriteLine("Chat GP: Hello!. What ails you?");

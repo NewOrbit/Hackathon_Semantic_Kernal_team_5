@@ -10,8 +10,15 @@
 
     <ItemGroup>
       <PackageReference Include="Azure.AI.OpenAI" Version="2.0.0-beta.4" />
+      <PackageReference Include="CsvHelper" Version="33.0.1" />
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
       <PackageReference Include="Microsoft.SemanticKernel" Version="1.18.1-rc" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Meds3.csv">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
