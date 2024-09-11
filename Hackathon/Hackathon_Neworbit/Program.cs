@@ -35,19 +35,35 @@ var chat = app.Services.GetRequiredService<IChatCompletionService>();
 var chatHistory = new ChatHistory();
 
 // create embeddings
-var embeddings = app.Services.GetRequiredService<ITextEmbeddingGenerationService>();
+var embedder = new EmbeddingsManager(app.Services.GetRequiredService<ITextEmbeddingGenerationService>());
 
-// create a vector using embedding
-var dog = await embeddings.GenerateEmbeddingAsync("dog");
-var house = await embeddings.GenerateEmbeddingAsync("house");
-var cat = await embeddings.GenerateEmbeddingAsync("cat");
+Console.WriteLine("Programming new embeddings...");
+await embedder.ProgramEmbedding("dog", "Animal that wags a tail");
+await embedder.ProgramEmbedding("cat", "cat");
+await embedder.ProgramEmbedding("house", "house");
 
-var fromHouse = dog.DistanceFrom(house);
-var fromDog = dog.DistanceFrom(cat);
+while (true)
+{
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.Write("Guess: ");
+    var prompt = Console.ReadLine();
+    var result = await embedder.Search(prompt);
 
-Console.WriteLine("Distance from dog:");
-Console.WriteLine($"house: {fromHouse}");
-Console.WriteLine($"cat:   {fromDog}");
+    Console.ForegroundColor = ConsoleColor.Green;
+    
+    Console.WriteLine("Result by distance: ");
+    foreach (var item in result)
+    {
+        Console.WriteLine($"{item.Distance} - {item.Id}");
+    }
+}
+
+
+chatHistory.AddSystemMessage(
+    "You are a pharmacist trying to help choose the right medication for a patient. The patient");
+
+Console.ForegroundColor = ConsoleColor.Green;
+Console.WriteLine("Chat GP: Hello!. What ails you?");
 
 chatHistory.AddSystemMessage(
     "You are a pharmacist trying to help choose the right medication for a patient. The patient");
